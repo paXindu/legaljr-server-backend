@@ -1,65 +1,45 @@
-import os
+from flask import Flask, jsonify
+from pymongo import MongoClient
+import json
 import glob
 import nltk
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from flask_cors import CORS
 
 
-data_path = "./path"
-files = glob.glob(os.path.join(data_path, "*.txt"))
+app = Flask(__name__)
+CORS(app)
+client = MongoClient('localhost', 27017)
+db = client.pdfs
+collection = db.text_files
+
+# Tokenize
 docs = []
-for file in files:
-    with open(file, "r") as f:
-        docs.append(f.read())
-
-# Tokenize 
-docs_tokenized = []
-for doc in docs:
-    tokens = word_tokenize(doc.lower())
-    docs_tokenized.append(tokens)
-
-# Remove stop words and punctuation
 stopwords = nltk.corpus.stopwords.words("english")
-docs_filtered = []
-for doc in docs_tokenized:
-    filtered = [word for word in doc if word not in stopwords and word.isalpha()]
-    docs_filtered.append(filtered)
+for file in collection.find():
+    tokens = word_tokenize(file['text'].lower())
+    filtered = [word for word in tokens if word not in stopwords and word.isalpha()]
+    preprocessed = " ".join(filtered)
+    docs.append(preprocessed)
 
-
-docs_preprocessed = []
-for doc in docs_filtered:
-    preprocessed = " ".join(doc)
-    docs_preprocessed.append(preprocessed)
-
-# vectorizer
+# Vectorize 
 vectorizer = TfidfVectorizer()
-vectorizer.fit(docs_preprocessed)
-docs_vectorized = vectorizer.transform(docs_preprocessed)
+vectorizer.fit(docs)
+docs_vectorized = vectorizer.transform(docs)
 
-
-
-def suggest_similar_document(document):
-    
-    document_tokenized = word_tokenize(document.lower())
-    document_filtered = [word for word in document_tokenized if word not in stopwords and word.isalpha()]
-    document_preprocessed = " ".join(document_filtered)
-
-    document_vectorized = vectorizer.transform([document_preprocessed])
-
-    similarity_scores = cosine_similarity(document_vectorized, docs_vectorized)
-
+@app.route('/files/<text>')
+def get_all_files(text):
+    similarity_scores = cosine_similarity(vectorizer.transform([text]), docs_vectorized)
     most_similar_index = similarity_scores.argmax()
     similarity_score = similarity_scores[0][most_similar_index]
-
+    
+    most_similar_index = int(most_similar_index)
+    cursor = collection.find().skip(most_similar_index).limit(1)
+    suggested_document = str(cursor[0]['_id'])
     similarity_percentage = round(similarity_score * 100, 2)
+    return f"The most similar document is {suggested_document}, with a similarity score of {similarity_percentage}%."
 
-    return files[most_similar_index], similarity_percentage
-
-
-with open('q.txt', 'r') as file:
-    content = file.read()
-sample_document = content
-
-suggested_document, similarity_percentage = suggest_similar_document(sample_document)
-print(f"The most similar document is {suggested_document}, with a similarity score of {similarity_percentage}%.")
+if __name__ == '__main__':
+    app.run(debug=True)

@@ -16,14 +16,14 @@ def upload_pdf():
     filename = file.filename
     filedata = file.read()
 
-    # Extract text from the PDF file
+    
     reader = PyPDF2.PdfFileReader(file)
     text = ''
     for page_num in range(reader.getNumPages()):
         page = reader.getPage(page_num)
         text += page.extractText()
 
-    # Store the text file in MongoDB
+    # MongoDB
     pdf = {'name': filename, 'text': text}
     pdf_id = pdf_files.insert_one(pdf).inserted_id
 
