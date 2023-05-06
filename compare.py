@@ -6,14 +6,16 @@ import nltk
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import os
+from flask_cors import CORS
+
 
 app = Flask(__name__)
+CORS(app)
 client = MongoClient('localhost', 27017)
 db = client.pdfs
 collection = db.text_files
 
-# Tokenize, remove stop words and punctuation, and preprocess the documents
+# Tokenize
 docs = []
 stopwords = nltk.corpus.stopwords.words("english")
 for file in collection.find():
@@ -22,7 +24,7 @@ for file in collection.find():
     preprocessed = " ".join(filtered)
     docs.append(preprocessed)
 
-# Vectorize the documents
+# Vectorize 
 vectorizer = TfidfVectorizer()
 vectorizer.fit(docs)
 docs_vectorized = vectorizer.transform(docs)
