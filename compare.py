@@ -26,9 +26,7 @@ vectorizer.fit(docs)
 docs_vectorized = vectorizer.transform(docs)
 
 
-import json
-
-def get_all_files(text, top_n=3):
+def get_all_files(text, top_n=4):
     
     print(text)
 

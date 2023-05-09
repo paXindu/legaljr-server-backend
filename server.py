@@ -16,6 +16,7 @@ CORS(app, )
 client = MongoClient('localhost', 27017)
 db = client['pdfs']
 pdf_files = db['pdf_files']
+user=db['user']
 
 @app.route('/pdfs', methods=['POST'])
 def fileupload():
@@ -46,6 +47,29 @@ def documents(id):
         return 'Document not found' 
     text = document.get('text')
     return text
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    new_user = {
+        'username': data['username'],
+        'password': data['password'],
+        'email': data['email']
+    }
+    result = user.insert_one(new_user)
+    return f'User {data["username"]} created with id {result.inserted_id}'
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json['username']
+    password = request.json['password']
+    
+    users = user.find_one({'username': username, 'password': password})
+    
+    if users:
+        return jsonify({'success': True, 'message': 'Logged in successfully!'})
+    else:
+        return jsonify({'success': False, 'message': 'Invalid username or password.'})
 
 
 if __name__ == '__main__':
