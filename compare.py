@@ -4,6 +4,7 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+import json
 
 
 client = MongoClient('localhost', 27017)
@@ -25,8 +26,10 @@ vectorizer.fit(docs)
 docs_vectorized = vectorizer.transform(docs)
 
 
-def get_all_files(text, top_n=3):
+import json
 
+def get_all_files(text, top_n=3):
+    
     print(text)
 
     text_tokenized = word_tokenize(text.lower())
@@ -48,9 +51,12 @@ def get_all_files(text, top_n=3):
         similarity_percentage = round(similarity_scores[i] * 100, 2)
         similar_documents.append((suggested_document, similarity_percentage))
 
-    output = ""
+    output_data = {}
     for doc, sim in similar_documents:
-        output += f"Document {doc} -Similarity {sim},"
-    output = output.rstrip(",")  
+        output_data[doc] = sim
 
-    return output
+    with open("output.json", "w") as f:
+        json.dump(output_data, f)
+    
+    return output_data
+

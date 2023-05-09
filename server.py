@@ -32,16 +32,20 @@ def summary(id):
 
 @app.route('/files/<id>')
 def compare(id):
-    # Get the document with the given id from MongoDB
+    
     document = pdf_files.find_one({'_id': ObjectId(id)})
     if document is None:
-        return 'Document not found'
-
-    # Extract the text data from the document
+        return 'Document not found' 
     text = document.get('text')
-
-    # Pass the text data to the get_all_files function
     return get_all_files(text)
+
+@app.route('/doc/<id>')
+def documents(id):
+    document = pdf_files.find_one({'_id': ObjectId(id)})
+    if document is None:
+        return 'Document not found' 
+    text = document.get('text')
+    return text
 
 
 if __name__ == '__main__':
