@@ -1,16 +1,11 @@
 
-
-from flask import Flask
-from bson.objectid import ObjectId
-from flask_cors import CORS
 from pymongo import MongoClient
 from flask import Flask, jsonify, request
 from sklearn.feature_extraction.text import TfidfVectorizer
 from spacy.lang.en import English
 import numpy as np
+from bson.objectid import ObjectId
 
-app = Flask(__name__)
-CORS(app)
 client = MongoClient('localhost', 27017)
 db = client['pdfs']
 pdf_files = db['pdf_files']
@@ -18,8 +13,7 @@ pdf_files = db['pdf_files']
 nlp = English()
 nlp.add_pipe("sentencizer")
 
-@app.route('/pdfs/<id>', methods=['GET'])
-def get_pdf(id):
+def get_summary(id):
     pdf = pdf_files.find_one({'_id': ObjectId(id)})
     if pdf:
         text = pdf['text']
@@ -46,5 +40,4 @@ def get_pdf(id):
     else:
         return jsonify({'error': 'PDF not found'}), 404
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
