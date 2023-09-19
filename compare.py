@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import json
-
+from bson.objectid import ObjectId
 
 client = MongoClient('localhost', 27017)
 db = client.pdfs
@@ -26,10 +26,16 @@ vectorizer.fit(docs)
 docs_vectorized = vectorizer.transform(docs)
 
 
-def get_all_files(text, top_n=4):
+def compare_documents(id, top_n=4):
+    document = collection.find_one({'_id': ObjectId(id)})
+    if document is None:
+        return {'error': 'Document not found'}
     
-    print(text)
+    text = document.get('text')
+    return get_all_files(text, top_n)
 
+
+def get_all_files(text, top_n=10):
     text_tokenized = word_tokenize(text.lower())
     text_filtered = [word for word in text_tokenized if word not in stopwords and word.isalpha()]
     text_preprocessed = " ".join(text_filtered)
@@ -39,8 +45,7 @@ def get_all_files(text, top_n=4):
     similarity_scores = cosine_similarity(text_vectorized, docs_vectorized)
     similarity_scores = similarity_scores[0]
 
-    top_n_indices = np.argsort(similarity_scores)[-top_n:]
-    top_n_indices = top_n_indices[::-1]
+    top_n_indices = np.argsort(similarity_scores)[::-1][:top_n]
 
     similar_documents = []
     for i in top_n_indices:
@@ -49,12 +54,10 @@ def get_all_files(text, top_n=4):
         similarity_percentage = round(similarity_scores[i] * 100, 2)
         similar_documents.append((suggested_document, similarity_percentage))
 
+    similar_documents = sorted(similar_documents, key=lambda x: x[1], reverse=True)[:top_n]
+
     output_data = {}
-    for doc, sim in similar_documents:
+    for rank, (doc, sim) in enumerate(similar_documents[:10], 1):
         output_data[doc] = sim
 
-    with open("output.json", "w") as f:
-        json.dump(output_data, f)
-    
     return output_data
-

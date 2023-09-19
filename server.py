@@ -4,9 +4,10 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from flask import Flask, jsonify, request
 from summary import get_summary
-from compare import get_all_files
+# from compare import compare_documents
 from fupload import upload_pdf
 from preview import get_pdf
+import json
 
 
 
@@ -33,12 +34,10 @@ def summary(id):
 
 @app.route('/files/<id>')
 def compare(id):
+    top_n = int(request.args.get('top_n', 10))
+    output_data = compare_documents(id, top_n)
     
-    document = pdf_files.find_one({'_id': ObjectId(id)})
-    if document is None:
-        return 'Document not found' 
-    text = document.get('text')
-    return get_all_files(text)
+    return jsonify(output_data)
 
 @app.route('/doc/<id>')
 def documents(id):
@@ -71,6 +70,6 @@ def login():
     else:
         return jsonify({'success': False, 'message': 'Invalid username or password.'})
 
-
+# cf23510
 if __name__ == '__main__':
     app.run(debug=True)
